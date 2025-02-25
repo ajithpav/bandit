@@ -1,0 +1,52 @@
+name: Security Checks
+
+on:
+  push:
+    branches:
+      - 'release/*'
+      - 'feature/*'
+      - july-updates
+    paths:
+      - 'requirements.txt'  # Run on changes to requirements.txt
+  pull_request:
+    branches:
+      - 'release/*'
+      - 'feature/*'
+      - july-updates
+
+jobs:
+  security-checks:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt  # Install from requirements.txt
+        pip install pip-audit safety bandit
+
+    - name: Run Bandit
+      run: bandit -r .
+
+    - name: Run pip-audit
+      run: pip-audit
+
+    - name: Run safety
+      run: safety check -r requirements.txt
+
+    - name: Upload Bandit Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-report
+        path: bandit-report.json
